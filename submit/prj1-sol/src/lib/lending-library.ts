@@ -1,4 +1,6 @@
 import { Errors } from 'cs544-js-utils';
+import { register } from 'module';
+import { title } from 'process';
 
 /** Note that errors are documented using the `code` option which must be
  *  returned (the `message` can be any suitable string which describes
@@ -78,7 +80,7 @@ export class LendingLibrary {
     }
     if (missingFields.length > 0) {
       const errors: Errors.Err[] = missingFields.map((field) => {
-        const msg = `property ${field} is required;`;
+        const msg = `property ${field} is required`;
         return new Errors.Err(msg, { code: 'MISSING', widget: field });
       });
 
@@ -146,28 +148,68 @@ export class LendingLibrary {
 /********************* General Utility Functions ***********************/
 
 //TODO: add general utility functions or classes.
+function isString(value: any): value is string {
+  return typeof value === 'string';
+}
+
 function validateAddBookRequest(req: Record<string, any>): Errors.Result<void> {
 
   const errors: Errors.Err[] = [];
 
   const requiredFields = ['title', 'authors', 'isbn', 'pages', 'year', 'publisher'];
 
+  if(req.authors.length == 0){
+    const msg = 'authors must not be empty';
+    errors.push(new Errors.Err(msg, { code: 'BAD_TYPE', widget: 'authors' }));
+  }
   if (!Array.isArray(req.authors) || !req.authors.every(author => typeof author === 'string')) {
-    const msg = 'BAD_TYPE: authors must have type string[]; widget=authors';
+    const msg = 'authors must have type string[]';
     errors.push(new Errors.Err(msg, { code: 'BAD_TYPE', widget: 'authors' }));
   }
 
+  // if(isString(req.title)){
+  //   const msg = 'title must have type string';
+  //   errors.push(new Errors.Err(msg, { code: 'BAD_TYPE', widget: 'title' }));
+  // }
+  // if(isString(req.publisher)){
+  //   const msg = 'title must have type string';
+  //   errors.push(new Errors.Err(msg, { code: 'BAD_TYPE', widget: 'title' }));
+  // }
+  
   const pages = req.pages;
   const year = req.year;
+  const nCopies = req.nCopies;
+  
+  // if (!(pages > 0)) {
+  //   const msg = `property pages must be > 0 `;
+  //   errors.push(new Errors.Err(msg, { code: 'BAD_TYPE', widget: 'pages' }));
+  // }
 
-  if (typeof pages !== 'number' || !Number.isInteger(pages) || pages <= 0) {
-    const msg = `BAD_TYPE: property pages must be numeric and > 0; widget=pages`;
-    errors.push(new Errors.Err(msg, { code: 'BAD_TYPE', widget: 'pages' }));
+  // if (!(year > 0)) {
+  //   const msg = `property year must be > 0 `;
+  //   errors.push(new Errors.Err(msg, { code: 'BAD_TYPE', widget: 'year' }));
+  // }
+
+  // if (typeof pages !== 'number' || !Number.isInteger(pages)) {
+  //   const msg = `property pages must be numeric`;
+  //   errors.push(new Errors.Err(msg, { code: 'BAD_TYPE', widget: 'pages' }));
+  // }
+
+  if (typeof year !== 'number' || !Number.isInteger(year)) {
+    const msg = `property year must be numeric`;
+    errors.push(new Errors.Err(msg, { code: 'BAD_TYPE', widget: 'year' }));
   }
 
-  if (typeof year !== 'number' || !Number.isInteger(year) || year <= 0) {
-    const msg = `BAD_TYPE: property year must be numeric and > 0; widget=year`;
-    errors.push(new Errors.Err(msg, { code: 'BAD_TYPE', widget: 'year' }));
+  const f = 'nCopies';
+  if (f in req) {
+    if (!(nCopies > 0)) {
+      const msg = 'propery nCopies must be > 0';
+      errors.push(new Errors.Err(msg, { code: 'BAD_REQ', widget: 'nCopies' }));
+    }
+    if (typeof nCopies !== 'number' || !Number.isInteger(nCopies) || typeof nCopies === undefined) {
+      const msg = `property nCopies must be numeric`;
+      errors.push(new Errors.Err(msg, { code: 'BAD_REQ', widget: 'nCopies' }));
+    }
   }
 
   return errors.length > 0 ? new Errors.ErrResult(errors) : Errors.okResult('TODO' as any);
