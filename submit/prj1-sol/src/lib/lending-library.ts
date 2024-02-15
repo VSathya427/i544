@@ -45,9 +45,17 @@ export function makeLendingLibrary() {
 export class LendingLibrary {
 
   //TODO: declare private TS properties for instance
+  private books: Record<ISBN, XBook>;
+  private wordIndex: Record<string, ISBN[]>;
+  private checkedOutBooks: Record<ISBN, PatronId[]>;
+  private booksCheckedOutByPatron: Record<PatronId, ISBN[]>;
   
   constructor() {
     //TODO: initialize private TS properties for instance
+    this.books = {};
+    this.wordIndex = {};
+    this.checkedOutBooks = {};
+    this.booksCheckedOutByPatron = {};
   }
 
   /** Add one-or-more copies of book represented by req to this library.
@@ -60,9 +68,33 @@ export class LendingLibrary {
    *             inconsistent with the data already present.
    */
   addBook(req: Record<string, any>): Errors.Result<XBook> {
-    //TODO
+    const requiredFields: string[] = ['title', 'authors', 'isbn', 'pages', 'year', 'publisher'];
+    const missingFields: string[] = [];
+
+    for (const field of requiredFields) {
+      if (!(field in req)) {
+        missingFields.push(field);
+      }
+    }
+    if (missingFields.length > 0) {
+      const errors: Errors.Err[] = missingFields.map((field) => {
+        const msg = `property ${field} is required;`;
+        return new Errors.Err(msg, { code: 'MISSING', widget: field });
+      });
+
+      return new Errors.ErrResult(errors);
+    }
+
+    const validationError = validateAddBookRequest(req);
+    if (validationError instanceof Errors.ErrResult) {
+      return validationError;
+    }
+  
     return Errors.errResult('TODO');  //placeholder
   }
+
+
+  
 
   /** Return all books matching (case-insensitive) all "words" in
    *  req.search, where a "word" is a max sequence of /\w/ of length > 1.
@@ -114,4 +146,30 @@ export class LendingLibrary {
 /********************* General Utility Functions ***********************/
 
 //TODO: add general utility functions or classes.
+function validateAddBookRequest(req: Record<string, any>): Errors.Result<void> {
 
+  const errors: Errors.Err[] = [];
+
+  const requiredFields = ['title', 'authors', 'isbn', 'pages', 'year', 'publisher'];
+
+  if (!Array.isArray(req.authors) || !req.authors.every(author => typeof author === 'string')) {
+    const msg = 'BAD_TYPE: authors must have type string[]; widget=authors';
+    errors.push(new Errors.Err(msg, { code: 'BAD_TYPE', widget: 'authors' }));
+  }
+
+  const pages = req.pages;
+  const year = req.year;
+
+  if (typeof pages !== 'number' || !Number.isInteger(pages) || pages <= 0) {
+    const msg = `BAD_TYPE: property pages must be numeric and > 0; widget=pages`;
+    errors.push(new Errors.Err(msg, { code: 'BAD_TYPE', widget: 'pages' }));
+  }
+
+  if (typeof year !== 'number' || !Number.isInteger(year) || year <= 0) {
+    const msg = `BAD_TYPE: property year must be numeric and > 0; widget=year`;
+    errors.push(new Errors.Err(msg, { code: 'BAD_TYPE', widget: 'year' }));
+  }
+
+  return errors.length > 0 ? new Errors.ErrResult(errors) : Errors.okResult('TODO' as any);
+
+}
