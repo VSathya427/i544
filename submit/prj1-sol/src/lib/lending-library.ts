@@ -59,74 +59,7 @@ export class LendingLibrary {
     this.checkedOutBooks = {};
     this.booksCheckedOutByPatron = {};
   }
-
-  /** Add one-or-more copies of book represented by req to this library.
-   *
-   *  Errors:
-   *    MISSING: one-or-more of the required fields is missing.
-   *    BAD_TYPE: one-or-more fields have the incorrect type.
-   *    BAD_REQ: other issues like nCopies not a positive integer 
-   *             or book is already in library but data in obj is 
-   *             inconsistent with the data already present.
-   */
-  // addBook(req: Record<string, any>): Errors.Result<XBook> {
-
-  //   const validationError = validateAddBookRequest(req);
-  //   if (validationError instanceof Errors.ErrResult) {
-  //     return validationError;
-  //   }
   
-  //   return Errors.errResult('TODO');  //placeholder
-  // }
-  // Add book to library
-  // addBook(req: Record<string, any>): Errors.Result<XBook> {
-
-  //   // Validate request
-  //   const validationResult = validateAddBookRequest(req);
-  //   if (validationResult instanceof Errors.ErrResult) {
-  //     return validationResult;
-  //   }
-
-  //   const book = req as XBook;
-
-  //   // Check if book already exists
-  //   // Check if book already exists
-  //   if (this.books[book.isbn]) {
-  //     const existing = this.books[book.isbn];
-  //     console.log("EXOISSDSD");
-  //     console.log(existing);
-  //     if (existing.title !== book.title ||
-  //       existing.authors.join(',') !== book.authors.join(',') ||
-  //       existing.pages !== book.pages ||
-  //       existing.year !== book.year ||
-  //       existing.publisher !== book.publisher) {
-  //       return Errors.errResult({
-  //         code: 'BAD_REQ',
-  //         message: `Inconsistent data for existing book ${book.isbn}`,
-  //         widget: 'title' // or whichever field was inconsistent
-  //       });
-
-  //     }
-  //   }
-
-  //   // Add new words to index
-  //   else {
-  //     book.nCopies = 1;
-  //     const words = getWords(book);
-  //     words.forEach(word => {
-  //       if (!this.wordIndex[word]) {
-  //         this.wordIndex[word] = [];
-  //       }
-  //       this.wordIndex[word].push(book.isbn);
-  //     });
-  //   }
-
-  //   // Add book 
-  //   this.books[book.isbn] = book;
-
-  //   return Errors.okResult(book);
-  // }
-
   addBook(req: Record<string, any>): Errors.Result<XBook> {
     const validationError = validateAddBookRequest(req);
     if (validationError instanceof Errors.ErrResult) {
@@ -208,10 +141,6 @@ export class LendingLibrary {
    *    BAD_TYPE: search field is not a string.
    *    BAD_REQ: no words in search
    */
-  // findBooks(req: Record<string, any>) : Errors.Result<XBook[]> {
-  //   //TODO
-  //   return Errors.errResult('TODO');  //placeholder
-  // }
   findBooks(req: FindBooksReq): Errors.Result<XBook[]> {
     // Validate request
     if (!req || !isString(req.search)) {
@@ -260,10 +189,7 @@ export class LendingLibrary {
    *    BAD_TYPE: patronId or isbn field is not a string.
    *    BAD_REQ error on business rule violation.
    */
-  // checkoutBook(req: Record<string, any>) : Errors.Result<void> {
-  //   //TODO
-  //   return Errors.errResult('TODO');  //placeholder
-  // }
+  
   checkoutBook(req: CheckoutBookReq): Errors.Result<void> {
     const errors: Errors.Err[] = [];
 
@@ -325,10 +251,6 @@ export class LendingLibrary {
    *    BAD_TYPE: patronId or isbn field is not a string.
    *    BAD_REQ error on business rule violation.
    */
-  // returnBook(req: Record<string, any>) : Errors.Result<void> {
-  //   //TODO 
-  //   return Errors.errResult('TODO');  //placeholder
-  // }
   returnBook(req: ReturnBookReq): Errors.Result<void> {
     const errors: Errors.Err[] = [];
 
@@ -493,27 +415,6 @@ function validateAddBookRequest(req: Record<string, any>): Errors.Result<void> {
   return errors.length > 0 ? new Errors.ErrResult(errors) : Errors.okResult('TODO' as any);
 }
 
-function getWords(book: Book) {
-  const words = new Set<string>();
-
-  const regexp = /\w+/g;
-
-  book.title.split(regexp).forEach(word => {
-    if (word.length > 1) {
-      words.add(word);
-    }
-  });
-
-  book.authors.forEach(author => {
-    author.split(regexp).forEach(word => {
-      if (word.length > 1) {
-        words.add(word);
-      }
-    });
-  });
-
-  return Array.from(words);
-}
 function updateWordIndex(title: string, authors: string[], isbn: ISBN, wordIndex: Record<string, ISBN[]>) {
   // Implement the logic to extract distinct words from title and authors
   const allWords: string[] = extractDistinctWords([title, ...authors]);
