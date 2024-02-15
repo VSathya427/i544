@@ -70,22 +70,6 @@ export class LendingLibrary {
    *             inconsistent with the data already present.
    */
   addBook(req: Record<string, any>): Errors.Result<XBook> {
-    const requiredFields: string[] = ['title', 'authors', 'isbn', 'pages', 'year', 'publisher'];
-    const missingFields: string[] = [];
-
-    for (const field of requiredFields) {
-      if (!(field in req)) {
-        missingFields.push(field);
-      }
-    }
-    if (missingFields.length > 0) {
-      const errors: Errors.Err[] = missingFields.map((field) => {
-        const msg = `property ${field} is required`;
-        return new Errors.Err(msg, { code: 'MISSING', widget: field });
-      });
-
-      return new Errors.ErrResult(errors);
-    }
 
     const validationError = validateAddBookRequest(req);
     if (validationError instanceof Errors.ErrResult) {
@@ -155,8 +139,24 @@ function isString(value: any): value is string {
 function validateAddBookRequest(req: Record<string, any>): Errors.Result<void> {
 
   const errors: Errors.Err[] = [];
+  console.log(req);
+  // const requiredFields = ['title', 'authors', 'isbn', 'pages', 'year', 'publisher'];
+  const requiredFields: string[] = ['title', 'authors', 'isbn', 'pages', 'year', 'publisher'];
+  const missingFields: string[] = [];
 
-  const requiredFields = ['title', 'authors', 'isbn', 'pages', 'year', 'publisher'];
+  for (const field of requiredFields) {
+    if (!(field in req)) {
+      missingFields.push(field);
+    }
+  }
+  if (missingFields.length > 0) {
+    const errors: Errors.Err[] = missingFields.map((field) => {
+      const msg = `property ${field} is required`;
+      return new Errors.Err(msg, { code: 'MISSING', widget: field });
+    });
+
+    return new Errors.ErrResult(errors);
+  }
 
   if(req.authors.length == 0){
     const msg = 'authors must not be empty';
@@ -167,51 +167,74 @@ function validateAddBookRequest(req: Record<string, any>): Errors.Result<void> {
     errors.push(new Errors.Err(msg, { code: 'BAD_TYPE', widget: 'authors' }));
   }
 
-  // if(isString(req.title)){
-  //   const msg = 'title must have type string';
-  //   errors.push(new Errors.Err(msg, { code: 'BAD_TYPE', widget: 'title' }));
-  // }
-  // if(isString(req.publisher)){
-  //   const msg = 'title must have type string';
-  //   errors.push(new Errors.Err(msg, { code: 'BAD_TYPE', widget: 'title' }));
-  // }
-  
+
+  if(!isString(req.title)){
+    const msg = 'title must have type string';
+    errors.push(new Errors.Err(msg, { code: 'BAD_TYPE', widget: 'title' }));
+  }
+  if(!isString(req.publisher)){
+    const msg = 'publisher must have type string';
+    errors.push(new Errors.Err(msg, { code: 'BAD_TYPE', widget: 'publisher' }));
+  }
+  if (!isString(req.isbn)) {
+    const msg = 'isbn must have type string';
+    errors.push(new Errors.Err(msg, { code: 'BAD_TYPE', widget: 'isbn' }));
+  }
+
+
   const pages = req.pages;
   const year = req.year;
   const nCopies = req.nCopies;
   
-  // if (!(pages > 0)) {
-  //   const msg = `property pages must be > 0 `;
-  //   errors.push(new Errors.Err(msg, { code: 'BAD_TYPE', widget: 'pages' }));
-  // }
+  if (typeof pages === 'number' && !(pages > 0)) {
+    const msg = `property pages must be > 0 `;
+    errors.push(new Errors.Err(msg, { code: 'BAD_REQ', widget: 'pages' }));
+  }
 
-  // if (!(year > 0)) {
-  //   const msg = `property year must be > 0 `;
-  //   errors.push(new Errors.Err(msg, { code: 'BAD_TYPE', widget: 'year' }));
-  // }
+  if (typeof year === 'number' && !(year > 0)) {
+    const msg = `property year must be > 0 `;
+    errors.push(new Errors.Err(msg, { code: 'BAD_REQ', widget: 'year' }));
+  }
 
-  // if (typeof pages !== 'number' || !Number.isInteger(pages)) {
-  //   const msg = `property pages must be numeric`;
-  //   errors.push(new Errors.Err(msg, { code: 'BAD_TYPE', widget: 'pages' }));
-  // }
+  if (typeof pages !== 'number' || !Number.isInteger(pages)) {
+    const msg = `property pages must be numeric`;
+    errors.push(new Errors.Err(msg, { code: 'BAD_TYPE', widget: 'pages' }));
+  }
 
   if (typeof year !== 'number' || !Number.isInteger(year)) {
     const msg = `property year must be numeric`;
     errors.push(new Errors.Err(msg, { code: 'BAD_TYPE', widget: 'year' }));
   }
+  // if(isNaN(Number(pages))){
+  //   const msg = `property pages must be numeric`;
+  //   errors.push(new Errors.Err(msg, { code: 'BAD_TYPE', widget: 'pages' }));
+  // }
+  // if (isNaN(Number(year))){
+  //   const msg = `property year must be numeric`;
+  //   errors.push(new Errors.Err(msg, { code: 'BAD_TYPE', widget: 'year' }));
+  // }
 
   const f = 'nCopies';
   if (f in req) {
-    if (!(nCopies > 0)) {
+    if (typeof nCopies === 'number' && !(nCopies > 0)) {
       const msg = 'propery nCopies must be > 0';
       errors.push(new Errors.Err(msg, { code: 'BAD_REQ', widget: 'nCopies' }));
     }
-    if (typeof nCopies !== 'number' || !Number.isInteger(nCopies) || typeof nCopies === undefined) {
-      const msg = `property nCopies must be numeric`;
-      errors.push(new Errors.Err(msg, { code: 'BAD_REQ', widget: 'nCopies' }));
+    if (typeof nCopies !== 'number' || !Number.isInteger(nCopies)) {
+      if (!Number.isNaN(Number.parseFloat(nCopies))){
+        const msg = `property nCopies must be numeric`;
+        errors.push(new Errors.Err(msg, { code: 'BAD_REQ', widget: 'nCopies' }));
+      }
+      else{
+        const msg = `property nCopies must be numeric`;
+        errors.push(new Errors.Err(msg, { code: 'BAD_TYPE', widget: 'nCopies' }));
+      }
     }
+    // if (!Number.isInteger(nCopies)){
+    //   const msg = `property nCopies must be numeric`;
+    //   errors.push(new Errors.Err(msg, { code: 'BAD_TYPE', widget: 'nCopies' }));
+    // }
   }
-
+  console.log(errors);
   return errors.length > 0 ? new Errors.ErrResult(errors) : Errors.okResult('TODO' as any);
-
 }
