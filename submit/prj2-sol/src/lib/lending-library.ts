@@ -3,6 +3,15 @@ import { Errors } from 'cs544-js-utils';
 import { LibraryDao } from './library-dao.js';
 import * as Lib from './library.js';
 
+interface Book {
+  isbn: string;
+  title: string;
+  authors: string[];
+  pages: number;
+  year: number;
+  publisher: string;
+  nCopies?: number;
+}
 /** Note that errors are documented using the `code` option which must be
  *  returned (the `message` can be any suitable string which describes
  *  the error as specifically as possible).  Whenever possible, the
@@ -26,8 +35,13 @@ export class LendingLibrary {
   }
 
   /** clear out underlying db */
-  async clear() : Promise<Errors.Result<void>> {
-    return Errors.errResult('TODO');
+  // async clear() : Promise<Errors.Result<void>> {
+  //   return Errors.errResult('TODO');
+  // }
+  /** clear out underlying db */
+  /** clear out underlying db */
+  async clear(): Promise<Errors.Result<void>> {
+    return await this.dao.clearCollections();
   }
 
   /** Add one-or-more copies of book represented by req to this library.
@@ -47,9 +61,37 @@ export class LendingLibrary {
    *      book is already in library but data in req is 
    *      inconsistent with the data already present.
    */
-  async addBook(req: Record<string, any>): Promise<Errors.Result<Lib.XBook>> {
-    return Errors.errResult('TODO');
+  // async addBook(req: Record<string, any>): Promise<Errors.Result<Lib.XBook>> {
+  //   return Errors.errResult('TODO');
+  // }
+  // Assuming Lib.Book has properties isbn, title, authors, pages, year, publisher, and nCopies
+  // and all are required except nCopies
+async addBook(req: Record<string, any>): Promise<Errors.Result<Lib.Book>> {
+  const bookResult = Lib.validate<Lib.Book>('addBook', req);
+  if (!bookResult.isOk) {
+    return bookResult;
   }
+
+  const book = bookResult.val as Lib.Book;
+
+  // Check if a book with the same ISBN already exists
+  const existingBookResult = await this.dao.findBookByIsbn(book.isbn);
+  if (existingBookResult.isOk) {
+    const existingBook = existingBookResult.val;
+    const diffField = compareBook(existingBook, book);
+    if (diffField) {
+      return Errors.errResult(`Book with ISBN ${book.isbn} already exists with different ${diffField}`, 'BAD_REQ');
+    }
+    await this.dao.incrementBookCopies(book.isbn, book.nCopies || 1);
+    return Errors.okResult(existingBook);
+  }
+
+
+  // If all required properties are present, proceed to create the book
+  await this.dao.createBook(book as Book);
+  return Errors.okResult(book);
+}
+
 
   /** Return all books whose authors and title fields contain all
    *  "words" in req.search, where a "word" is a max sequence of /\w/

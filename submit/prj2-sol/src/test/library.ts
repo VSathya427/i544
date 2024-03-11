@@ -6,7 +6,7 @@ import { assert, expect } from 'chai';
 
 const BOOK_1 = BOOKS[0];
 
-describe.skip('library types', () => {
+describe('library types', () => {
 
   describe('Book validation', () => {
     it('a good book is valid', () => {
@@ -34,8 +34,15 @@ describe.skip('library types', () => {
       expect(result.errors.length).to.be.gt(0);
     });
 
+    // it('having no authors is invalid', () => {
+    //   assert.fail('TODO');
+    // });
     it('having no authors is invalid', () => {
-      assert.fail('TODO');
+      const req: Record<string, any> = { ...BOOK_1 };
+      req.authors = [];
+      const result = Lib.validate('addBook', req);
+      assert(result.isOk === false);
+      expect(result.errors.length).to.be.gt(0);
     });
     
     it('an empty author is invalid', () => {
@@ -46,8 +53,15 @@ describe.skip('library types', () => {
       expect(result.errors.length).to.be.gt(0);
     });
     
+    // it('badly typed fields makes a good book invalid', () => {
+    //   assert.fail('TODO');
+    // });
     it('badly typed fields makes a good book invalid', () => {
-      assert.fail('TODO');
+      const req: Record<string, any> = { ...BOOK_1 };
+      req.pages = 'not a number';
+      const result = Lib.validate('addBook', req);
+      assert(result.isOk === false);
+      expect(result.errors.length).to.be.gt(0);
     });
 
     it('empty string fields makes a good book invalid', () => {

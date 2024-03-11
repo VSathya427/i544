@@ -23,14 +23,31 @@ const MSGS = {
 //   year: an integer within the range [GUTENBERG_YEAR, NOW_YEAR].
 //   publisher: a non-empty string.
 //   nCopies: an optional positive integer
-const Book =  z.object({
-  isbn: z.string(),
-  title: z.string(),
-  authors: z.string().array(),
-  pages: z.number(),
-  year: z.number(),
-  publisher: z.string(),
-  nCopies: z.number(),
+// const Book =  z.object({
+//   isbn: z.string(),
+//   title: z.string(),
+//   authors: z.string().array(),
+//   pages: z.number(),
+//   year: z.number(),
+//   publisher: z.string(),
+//   nCopies: z.number(),
+// });
+const Book = z.object({
+  isbn: z.string().regex(/^\d{3}-\d{3}-\d{3}-\d$/, MSGS['msg.isbn']),
+  title: z.string().refine(str => str.trim().length > 0, {
+    message: MSGS['msg.nonEmpty'],
+  }),
+  authors: z.array(z.string().refine(str => str.trim().length > 0, {
+    message: MSGS['msg.nonEmpty'],
+  })).refine(arr => arr.length > 0, {
+    message: MSGS['msg.oneOrMoreAuthors'],
+  }),
+  pages: z.number().positive(),
+  year: z.number().int().min(GUTENBERG_YEAR).max(NOW_YEAR, MSGS['msg.publishYear']),
+  publisher: z.string().refine(str => str.trim().length > 0, {
+    message: MSGS['msg.nonEmpty'],
+  }),
+  nCopies: z.number().positive().optional().default(1),
 });
 
 export type Book = z.infer<typeof Book>;
@@ -42,20 +59,35 @@ export type XBook = z.infer<typeof XBook>;
 //   search: a string which contains at least one word of two-or-more \w.
 //   index: an optional non-negative integer.
 //   count: an optional non-negative integer.
+// const Find = z.object({
+//   search: z.string(),
+//   index: z.number(),
+//   count: z.number(),
+// });
 const Find = z.object({
-  search: z.string(),
-  index: z.number(),
-  count: z.number(),
+  search: z.string().refine(str => /\b\w{2,}\b/.test(str), {
+    message: 'search must contain at least one word of two or more characters',
+  }),
+  index: z.number().nonnegative().optional(),
+  count: z.number().nonnegative().optional(),
 });
+
 export type Find = z.infer<typeof Find>;
 
 // use zod to force Lend to have the following fields:
 //   isbn: a ISBN-10 string of the form ddd-ddd-ddd-d.
 //   patronId: a non-empty string.
+// const Lend = z.object({
+//   isbn: z.string(),
+//   patronId: z.string(),
+// });
 const Lend = z.object({
-  isbn: z.string(),
-  patronId: z.string(),
+  isbn: z.string().regex(/^\d{3}-\d{3}-\d{3}-\d$/, MSGS['msg.isbn']),
+  patronId: z.string().refine(str => str.trim().length > 0, {
+    message: MSGS['msg.nonEmpty'],
+  }),
 });
+
 export type Lend = z.infer<typeof Lend>;
 
 const VALIDATORS: Record<string, z.ZodSchema> = {
