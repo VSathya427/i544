@@ -30,6 +30,7 @@ export class LibraryDao {
 
   private client: mongo.MongoClient;
   private booksCollection: mongo.Collection<Book>;
+  private checkoutsCollection: mongo.Collection<{ patronId: string; isbn: string }>;
 
   //called by below static make() factory function with
   //parameters to be cached in this instance.
@@ -50,6 +51,7 @@ export class LibraryDao {
 
       // Create indexes
       await booksCollection.createIndex({ title: 'text', authors: 'text' });
+      const checkoutsCollection = db.collection<{ patronId: string; isbn: string }>('checkouts');
 
       return Errors.okResult(new LibraryDao(client, booksCollection));
     } catch (error) {
@@ -57,9 +59,6 @@ export class LibraryDao {
     }
   }
 
-  /** close off this DAO; implementing object is invalid after call to close()
-   * Error Codes: DB: a database error was encountered.
-   */
   async close(): Promise<Errors.Result<void>> {
     try {
       await this.client.close();
@@ -81,11 +80,6 @@ export class LibraryDao {
     }
   }
 
-  /**
-   * Find a book by its ISBN.
-   * @param isbn The ISBN of the book to find.
-   * @returns A Result containing the book if found, or an error if not found.
-   */
   async findBookByIsbn(isbn: string): Promise<Errors.Result<Lib.Book>> {
     try {
       const book = await this.booksCollection.findOne({ isbn });
@@ -98,12 +92,7 @@ export class LibraryDao {
     }
   }
 
-  /**
-    * Increment the number of copies for a book by its ISBN.
-    * @param isbn The ISBN of the book.
-    * @param nCopies The number of copies to increment.
-    * @returns A Result indicating success or an error.
-    */
+
   async incrementBookCopies(isbn: string, nCopies: number): Promise<Errors.Result<void>> {
     try {
       const result = await this.booksCollection.updateOne(
@@ -119,11 +108,6 @@ export class LibraryDao {
     }
   }
 
-  /**
-   * Create a new book entry in the database.
-   * @param book The book to create.
-   * @returns A Result indicating success or an error.
-   */
   async createBook(book: mongo.OptionalId<Book>): Promise<Errors.Result<void>> {
     try {
       const result = await this.booksCollection.insertOne(book);
@@ -135,8 +119,64 @@ export class LibraryDao {
       return Errors.errResult(error.message, 'DB');
     }
   }
+  
+  async findBooks(findQuery: any, index: number, count: number): Promise<Errors.Result<Lib.Book[]>> {
+    try {
+      const books = await this.booksCollection
+        .find(findQuery)
+        .sort({ title: 1 }) // Sort by title in ascending order
+        .skip(index)
+        .limit(count)
+        .toArray();
 
+      // Convert the authors field to an array of strings and exclude the _id field
+      const formattedBooks = books.map((book) => ({
+        isbn: book.isbn,
+        title: book.title,
+        authors: book.authors.map((author: any) => author.toString()),
+        pages: book.pages,
+        year: book.year,
+        publisher: book.publisher,
+        nCopies: book.nCopies,
+      }));
 
+      return Errors.okResult(formattedBooks);
+    } catch (error) {
+      return Errors.errResult(error.message, 'DB');
+    }
+  }
+
+  async checkoutBook(patronId: string, isbn: string): Promise<Errors.Result<void>> {
+    try {
+      // Check if the book is available for checkout
+      const bookResult = await this.findBookByIsbn(isbn);
+      if (!bookResult.isOk) {
+        return bookResult as Errors.Result<void>;
+      }
+      const book = bookResult.val;
+      if (book.nCopies === 0) {
+        return Errors.errResult(`No copies of book with ISBN ${isbn} are available for checkout`, 'BAD_REQ');
+      }
+
+      // Check if the patron already has a copy of the book checked out
+      const existingCheckout = await this.checkoutsCollection.findOne({ patronId, isbn });
+      if (existingCheckout) {
+        return Errors.errResult(`Patron with ID ${patronId} already has a copy of book with ISBN ${isbn} checked out`, 'BAD_REQ');
+      }
+
+      // Create a new checkout record
+      await this.checkoutsCollection.insertOne({ patronId, isbn });
+
+      // Decrement the number of copies of the book
+      await this.incrementBookCopies(isbn, -1);
+
+      return Errors.okResult(undefined);
+    } catch (error) {
+      return Errors.errResult(error.message, 'DB');
+    }
+  }
+
+  
 } 
 
 

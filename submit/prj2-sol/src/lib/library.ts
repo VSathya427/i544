@@ -47,7 +47,7 @@ const Book = z.object({
   publisher: z.string().refine(str => str.trim().length > 0, {
     message: MSGS['msg.nonEmpty'],
   }),
-  nCopies: z.number().positive().optional().default(1),
+  nCopies: z.number().positive().int().optional().default(1),
 });
 
 export type Book = z.infer<typeof Book>;

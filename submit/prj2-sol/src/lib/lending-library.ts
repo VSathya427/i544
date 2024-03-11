@@ -112,10 +112,43 @@ async addBook(req: Record<string, any>): Promise<Errors.Result<Lib.Book>> {
    *    BAD_TYPE: search field is not a string or index/count are not numbers.
    *    BAD_REQ: no words in search, index/count not int or negative.
    */
-  async findBooks(req: Record<string, any>)
-    : Promise<Errors.Result<Lib.XBook[]>>
-  {
-    return Errors.errResult('TODO');
+  // async findBooks(req: Record<string, any>)
+  //   : Promise<Errors.Result<Lib.XBook[]>>
+  // {
+  //   return Errors.errResult('TODO');
+  // }
+
+  async findBooks(req: Record<string, any>): Promise<Errors.Result<Lib.XBook[]>> {
+    // Validate the request
+    if (!req.search || typeof req.search !== 'string') {
+      return Errors.errResult('Search field is missing or not a string', 'MISSING');
+    }
+    const index = req.index !== undefined ? parseInt(req.index) : 0;
+    const count = req.count !== undefined ? parseInt(req.count) : DEFAULT_COUNT;
+    if (isNaN(index) || isNaN(count) || index < 0 || count < 0) {
+      return Errors.errResult('Index or count is not a number or is negative', 'BAD_REQ');
+    }
+
+    // Extract and format search terms
+    const words = req.search.match(/\w{2,}/g);
+    if (!words || words.length === 0) {
+      return Errors.errResult('No words in search', 'BAD_REQ');
+    }
+    const searchQuery = words.map(word => `"${word}"`).join(' ');
+
+    // Perform the search using the DAO
+    try {
+      const booksResult = await this.dao.findBooks({ $text: { $search: searchQuery } }, index, count);
+      if (booksResult.isOk) {
+        return Errors.okResult(booksResult.val);
+      } else {
+        // Assuming booksResult is an ErrResult, return it directly
+        return booksResult;
+      }
+    } catch (error) {
+      // Handle any errors that occur during the search
+      return Errors.errResult('An error occurred while searching for books', 'INTERNAL_ERROR');
+    }
   }
 
 
@@ -168,5 +201,6 @@ function compareBook(book0: Lib.Book, book1: Lib.Book) : string|undefined {
   if (book0.year !== book1.year) return 'year';
   if (book0.publisher !== book1.publisher) return 'publisher';
 }
+
 
 
