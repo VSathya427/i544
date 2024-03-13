@@ -15,6 +15,11 @@ interface Book {
   nCopies?: number;
 }
 
+interface Patron {
+  patronId: string;
+  isbn: string;
+}
+
 
 export async function makeLibraryDao(dbUrl: string) {
   return await LibraryDao.make(dbUrl);
@@ -30,13 +35,14 @@ export class LibraryDao {
 
   private client: mongo.MongoClient;
   private booksCollection: mongo.Collection<Book>;
-  private checkoutsCollection: mongo.Collection<{ patronId: string; isbn: string }>;
+  private checkoutsCollection: mongo.Collection<Patron>;
 
   //called by below static make() factory function with
   //parameters to be cached in this instance.
-  constructor(client: mongo.MongoClient, booksCollection: mongo.Collection<Book>) {
+  constructor(client: mongo.MongoClient, booksCollection: mongo.Collection<Book>, checkoutsCollection: mongo.Collection<Patron>) {
     this.client = client;
     this.booksCollection = booksCollection;
+    this.checkoutsCollection = checkoutsCollection;
   }
 
   //static factory function; should do all async operations like
@@ -51,9 +57,9 @@ export class LibraryDao {
 
       // Create indexes
       await booksCollection.createIndex({ title: 'text', authors: 'text' });
-      const checkoutsCollection = db.collection<{ patronId: string; isbn: string }>('checkouts');
+      const checkoutsCollection = db.collection<Patron>('checkouts');
 
-      return Errors.okResult(new LibraryDao(client, booksCollection));
+      return Errors.okResult(new LibraryDao(client, booksCollection, checkoutsCollection));
     } catch (error) {
       return Errors.errResult(error.message, 'DB');
     }
@@ -68,12 +74,11 @@ export class LibraryDao {
     }
   }
 
-  
   //add methods as per your API
   async clearCollections(): Promise<Errors.Result<void>> {
     try {
       await this.booksCollection.deleteMany({});
-      // Clear any other collections you might have
+      await this.checkoutsCollection.deleteMany({});
       return Errors.okResult(undefined);
     } catch (error) {
       return Errors.errResult(error.message, 'DB');
@@ -119,7 +124,7 @@ export class LibraryDao {
       return Errors.errResult(error.message, 'DB');
     }
   }
-  
+
   async findBooks(findQuery: any, index: number, count: number): Promise<Errors.Result<Lib.Book[]>> {
     try {
       const books = await this.booksCollection
@@ -146,29 +151,61 @@ export class LibraryDao {
     }
   }
 
-  async checkoutBook(patronId: string, isbn: string): Promise<Errors.Result<void>> {
+  async checkoutBook(isbn: string, patronId: string): Promise<Errors.Result<void>> {
     try {
       // Check if the book is available for checkout
       const bookResult = await this.findBookByIsbn(isbn);
       if (!bookResult.isOk) {
         return bookResult as Errors.Result<void>;
       }
-      const book = bookResult.val;
-      if (book.nCopies === 0) {
-        return Errors.errResult(`No copies of book with ISBN ${isbn} are available for checkout`, 'BAD_REQ');
-      }
-
-      // Check if the patron already has a copy of the book checked out
-      const existingCheckout = await this.checkoutsCollection.findOne({ patronId, isbn });
-      if (existingCheckout) {
-        return Errors.errResult(`Patron with ID ${patronId} already has a copy of book with ISBN ${isbn} checked out`, 'BAD_REQ');
-      }
-
       // Create a new checkout record
-      await this.checkoutsCollection.insertOne({ patronId, isbn });
-
+      const checkoutData = { patronId, isbn };
+      const result = await this.checkoutsCollection.insertOne(checkoutData);
+      if (!result.insertedId) {
+        return Errors.errResult(`Failed to create checkout record for patron ${patronId} and book ${isbn}`, 'DB');
+      }
+      //this.printCheckoutsCollection();
       // Decrement the number of copies of the book
       await this.incrementBookCopies(isbn, -1);
+      return Errors.okResult(undefined);
+    } catch (error) {
+      return Errors.errResult(error.message, 'DB');
+    }
+  }
+
+  async returnBook(patronId: string, isbn: string): Promise<Errors.Result<void>> {
+    try {
+      // Check if the book is currently checked out
+      const checkoutDetails = await this.getCheckoutDetails(patronId, isbn);
+      if (!checkoutDetails.isOk || !checkoutDetails.val) {
+        return Errors.errResult(`Book with ISBN ${isbn} is not checked out by patron with ID ${patronId}`, 'BAD_REQ');
+      }
+
+      // Remove the checkout record
+      const returnData = { patronId, isbn };
+      const deleteResult = await this.checkoutsCollection.deleteOne(returnData);
+      if (deleteResult.deletedCount === 0) {
+        return Errors.errResult(`Book with ISBN ${isbn} is not checked out by patron with ID ${patronId}`, 'BAD_REQ');
+      }
+
+      // Fetch the book document
+      const bookResult = await this.findBookByIsbn(isbn);
+      if (!bookResult.isOk) {
+        return bookResult as Errors.Result<void>;
+      }
+      const book = bookResult.val;
+
+      // Increment the number of copies of the book
+      const updatedBook = {
+        ...book,
+        nCopies: book.nCopies ? book.nCopies + 1 : 1,
+      };
+
+      // Update the book document in the books collection
+      await this.booksCollection.updateOne(
+        { isbn: book.isbn },
+        { $set: updatedBook }
+      );
 
       return Errors.okResult(undefined);
     } catch (error) {
@@ -176,7 +213,27 @@ export class LibraryDao {
     }
   }
 
-  
-} 
+  async getCheckoutDetails(patronId: string, isbn: string): Promise<Errors.Result<Patron | null>> {
+    try {
+      const returnData = { patronId, isbn };
+      const checkoutDetails = await this.checkoutsCollection.findOne(returnData);
+      return Errors.okResult(checkoutDetails);
+    } catch (error) {
+      return Errors.errResult(error.message, 'DB');
+    }
+  }
+
+
+  async printCheckoutsCollection(): Promise<void> {
+    try {
+      const checkouts = await this.checkoutsCollection.find().toArray();
+      console.log("Checkouts Collection:");
+      console.log(JSON.stringify(checkouts, null, 2));
+    } catch (error) {
+      console.error("Error printing checkouts collection:", error.message);
+    }
+  }
+
+}
 
 
