@@ -41,7 +41,7 @@ describe('lending library web services', () => {
   });
 
 
-  describe.skip('Add Book Web Service', () => {
+  describe('Add Book Web Service', () => {
 
     const NUMERIC_FIELDS = [ 'pages', 'year', 'nCopies' ];
 
@@ -113,14 +113,14 @@ describe('lending library web services', () => {
     it('must catch non-integer nCopies field', async () => {
       const url = `${BASE}/books`;
       for (const book of BOOKS) {
-	const book1 = { ...book, nCopies: 2.001 };
-	const res =
-	  await ws.put(url)
-	    .set('Content-Type', 'application/json')
-	    .send(book1);
-	expect(res.status).to.equal(STATUS.BAD_REQUEST);
-	expect(res.body?.isOk).to.equal(false);
-	expect(res.body.errors.length).to.be.gt(0);
+        const book1 = { ...book, nCopies: 2.001 };
+        const res =
+          await ws.put(url)
+            .set('Content-Type', 'application/json')
+            .send(book1);
+        expect(res.status).to.equal(STATUS.BAD_REQUEST);
+        expect(res.body?.isOk).to.equal(false);
+        expect(res.body.errors.length).to.be.gt(0);
       }
     });
 
@@ -128,16 +128,16 @@ describe('lending library web services', () => {
       const url = `${BASE}/books`;
       const book = BOOKS[0];
       for (const key of Object.keys(book)) {
-	if (NUMERIC_FIELDS.includes(key) || key === 'authors') continue;
-	const book1: Record<string, any> = { ...book };
-	book1[key] = 11;
-	const res =
-	  await ws.put(url)
-	    .set('Content-Type', 'application/json')
-	    .send(book1);
-	expect(res.status).to.equal(STATUS.BAD_REQUEST);
-	expect(res.body?.isOk).to.equal(false);
-	expect(res.body.errors.length).to.be.gt(0);
+        if (NUMERIC_FIELDS.includes(key) || key === 'authors') continue;
+        const book1: Record<string, any> = { ...book };
+        book1[key] = 11;
+        const res =
+          await ws.put(url)
+            .set('Content-Type', 'application/json')
+            .send(book1);
+        expect(res.status).to.equal(STATUS.BAD_REQUEST);
+        expect(res.body?.isOk).to.equal(false);
+        expect(res.body.errors.length).to.be.gt(0);
       }
     });
 
@@ -148,12 +148,12 @@ describe('lending library web services', () => {
       const book1: Record<string, any> = { ...book };
       book1.authors = 'hello';
       const res =
-	await ws.put(url)
-	  .set('Content-Type', 'application/json')
-	  .send(book1);
-      expect(res.status).to.equal(STATUS.BAD_REQUEST);
-      expect(res.body?.isOk).to.equal(false);
-      expect(res.body.errors.length).to.be.gt(0);
+        await ws.put(url)
+          .set('Content-Type', 'application/json')
+          .send(book1);
+            expect(res.status).to.equal(STATUS.BAD_REQUEST);
+            expect(res.body?.isOk).to.equal(false);
+            expect(res.body.errors.length).to.be.gt(0);
     });
 
     it('must catch badly typed author', async () => {
@@ -162,12 +162,12 @@ describe('lending library web services', () => {
       const book1: Record<string, any> = { ...book };
       book1.authors = ['hello', 22];
       const res =
-	await ws.put(url)
-	  .set('Content-Type', 'application/json')
-	  .send(book1);
-      expect(res.status).to.equal(STATUS.BAD_REQUEST);
-      expect(res.body?.isOk).to.equal(false);
-      expect(res.body.errors.length).to.be.gt(0);
+        await ws.put(url)
+          .set('Content-Type', 'application/json')
+          .send(book1);
+            expect(res.status).to.equal(STATUS.BAD_REQUEST);
+            expect(res.body?.isOk).to.equal(false);
+            expect(res.body.errors.length).to.be.gt(0);
     });
 
     it('must catch empty authors', async () => {
@@ -176,38 +176,80 @@ describe('lending library web services', () => {
       const book1 = { ...book };
       book1.authors = [];
       const res =
-	await ws.put(url)
-	  .set('Content-Type', 'application/json')
-	  .send(book1);
-      expect(res.status).to.equal(STATUS.BAD_REQUEST);
-      expect(res.body?.isOk).to.equal(false);
-      expect(res.body.errors.length).to.be.gt(0);
+        await ws.put(url)
+          .set('Content-Type', 'application/json')
+          .send(book1);
+            expect(res.status).to.equal(STATUS.BAD_REQUEST);
+            expect(res.body?.isOk).to.equal(false);
+            expect(res.body.errors.length).to.be.gt(0);
     });
 
 
   });  //describe('Add Book ...')
 
-  describe.skip('Get Book Web Service', async () => {
+  // describe('Get Book Web Service', async () => {
+
+  //   beforeEach(async () => {
+  //     await loadAllBooks(ws);
+  //   });
+
+  //   it('must get a book with specified isbn', async () => {
+  //     assert.fail('TODO');
+  //   });
+    
+  //   it('must get a 404 for a book having a bad isbn', async () => {
+  //     assert.fail('TODO');
+  //   });
+
+  //   it('must retrieve an added book from its Location header', async () => {
+  //     assert.fail('TODO');
+  //   });
+    
+  // });
+
+  describe('Get Book Web Service', async () => {
 
     beforeEach(async () => {
       await loadAllBooks(ws);
     });
 
     it('must get a book with specified isbn', async () => {
-      assert.fail('TODO');
+      const book = BOOKS[0];
+      const isbn = book.isbn;
+      const url = `${BASE}/books/${isbn}`;
+      const res = await ws.get(url);
+      expect(res.status).to.equal(STATUS.OK);
+      expect(res.body.isOk).to.equal(true);
+      expect(res.body.result).to.deep.equal(book);
     });
-    
+
     it('must get a 404 for a book having a bad isbn', async () => {
-      assert.fail('TODO');
+      const badIsbn = "bad-isbn";
+      const url = `${BASE}/books/${badIsbn}`;
+      const res = await ws.get(url);
+      expect(res.status).to.equal(STATUS.NOT_FOUND);
+      expect(res.body.isOk).to.equal(false);
+      expect(res.body.errors.length).to.be.gt(0);
     });
 
     it('must retrieve an added book from its Location header', async () => {
-      assert.fail('TODO');
+      const book = BOOKS[0];
+      const isbn = book.isbn;
+      const putUrl = `${BASE}/books`;
+      const putRes = await ws.put(putUrl)
+        .set('Content-Type', 'application/json')
+        .send(book);
+      expect(putRes.status).to.equal(STATUS.CREATED);
+      const location = putRes.headers.location;
+      const getRes = await ws.get(location);
+      expect(getRes.status).to.equal(STATUS.OK);
+      expect(getRes.body.isOk).to.equal(true);
+      expect(getRes.body.result).to.deep.equal(putRes.body.result);
     });
-    
+
   });
   
-  describe.skip('Clear Web Service', async () => {
+  describe('Clear Web Service', async () => {
 
     beforeEach(async () => {
       await loadAllBooks(ws);
@@ -230,7 +272,7 @@ describe('lending library web services', () => {
     
   });
   
-  describe.skip('Find Books Web Service', async () => {
+  describe('Find Books Web Service', async () => {
 
     beforeEach(async () => {
       await loadAllBooks(ws);
@@ -261,21 +303,33 @@ describe('lending library web services', () => {
       expect(res.body.errors.length).to.be.gt(0);
     });
 
+    // it('must error on a search field with bad index/count', async () => {
+    //   assert.fail('TODO');
+    // });
     it('must error on a search field with bad index/count', async () => {
-      assert.fail('TODO');
+      const search = 'javascript';
+      const index = 'not_an_integer';
+      const count = 'invalid_count';
+      const url = urlString(`${BASE}/books`, { search, index, count });
+      const res = await ws.get(url);
+      expect(res.status).to.equal(STATUS.BAD_REQUEST); 
+      expect(res.body?.isOk).to.equal(false);
+      expect(res.body.errors.length).to.be.gt(0);
     });
+
+
 
     it('must find all results', async () => {
       const count = 9999;
       for (const lang of [ 'javascript', 'ruby', 'scala' ]) {
-	const url = urlString(`${BASE}/books`, { search: lang, count });
-	const res = await ws.get(url);
-	expect(res.status).to.equal(STATUS.OK);
-	expect(res.body?.isOk).to.equal(true);	
-	expect(res.body.result).to.have.length(LANG_BOOKS[lang].length);
-	const expected = LANG_BOOKS[lang].map(b => ({nCopies: 1, ...b}));
-	const result: Record<string, any>[] = res.body.result;
-	expect(result.map(r => r.result)).to.deep.equal(expected);
+        const url = urlString(`${BASE}/books`, { search: lang, count });
+        const res = await ws.get(url);
+        expect(res.status).to.equal(STATUS.OK);
+        expect(res.body?.isOk).to.equal(true);	
+        expect(res.body.result).to.have.length(LANG_BOOKS[lang].length);
+        const expected = LANG_BOOKS[lang].map(b => ({nCopies: 1, ...b}));
+        const result: Record<string, any>[] = res.body.result;
+        expect(result.map(r => r.result)).to.deep.equal(expected);
       }
     });
 	       
@@ -302,17 +356,33 @@ describe('lending library web services', () => {
       expect(res.status).to.equal(STATUS.OK);
       expect(res.body?.isOk).to.equal(true);	
       const expected = BOOKS
-	.filter(b => b.title.match(/definitive/i))
-	.filter(b => b.title.match(/javascript/i))
-	.sort((b1, b2) => b1.title.localeCompare(b2.title))
+        .filter(b => b.title.match(/definitive/i))
+        .filter(b => b.title.match(/javascript/i))
+        .sort((b1, b2) => b1.title.localeCompare(b2.title))
         .map(b => ({ nCopies: 1, ...b }));
       const result: Record<string, any>[] = res.body.result;
       expect(result.map(r => r.result)).to.deep.equal(expected);
     });
 
+    // it('must find a subsequence of JavaScript books', async () => {
+    //   assert.fail('TODO');
+    // });
+
     it('must find a subsequence of JavaScript books', async () => {
-      assert.fail('TODO');
-    });
+      const search = 'javascript';
+      const index = 2;
+      const count = 4;
+      const url = urlString(`${BASE}/books`, { search, index, count });
+      const res = await ws.get(url);
+      expect(res.status).to.equal(STATUS.OK);
+      expect(res.body?.isOk).to.equal(true);	
+      const jsBooks = BOOKS
+        .filter(b => b.title.toLowerCase().includes(search))
+        .sort((b1, b2) => b1.title.localeCompare(b2.title))
+        .slice(index, index + count);
+      const result: Record<string, any>[] = res.body.result;
+      expect(result.map(r => r.result)).to.deep.equal(jsBooks);
+});
 
     it('must find no results', async () => {
       const search = 'a #definitive1 ';
@@ -325,18 +395,18 @@ describe('lending library web services', () => {
     
   });
 
-  describe.skip('Checkout Book Web Service with empty library', async () => {
+  describe('Checkout Book Web Service with empty library', async () => {
 
     it('must error on missing field', async () => {
       for (const f of [ 'isbn', 'patronId' ]) {
-	const v = (f === 'isnb') ? BOOKS[0].isbn : PATRONS[0];
-	const req = { [f]: v };
-	const res = await ws.put(`${BASE}/lendings`)
-	  .set('Content-Type', 'application/json')
-	  .send(req);
-	expect(res.status).to.equal(STATUS.BAD_REQUEST);
-	expect(res.body?.isOk).to.equal(false);
-	expect(res.body.errors.length).to.be.gt(0);
+        const v = (f === 'isnb') ? BOOKS[0].isbn : PATRONS[0];
+        const req = { [f]: v };
+        const res = await ws.put(`${BASE}/lendings`)
+          .set('Content-Type', 'application/json')
+          .send(req);
+        expect(res.status).to.equal(STATUS.BAD_REQUEST);
+        expect(res.body?.isOk).to.equal(false);
+        expect(res.body.errors.length).to.be.gt(0);
       }
     });
 
@@ -344,8 +414,8 @@ describe('lending library web services', () => {
     it('must error on bad book', async () => {
       const [ patronId, isbn ] = [ PATRONS[0], BOOKS[0].isbn ];
       const res = await ws.put(`${BASE}/lendings`)
-	.set('Content-Type', 'application/json')
-	.send( { patronId, isbn });
+        .set('Content-Type', 'application/json')
+        .send( { patronId, isbn });
       expect(res.status).to.equal(STATUS.BAD_REQUEST);
       expect(res.body?.isOk).to.equal(false);
       expect(res.body.errors.length).to.be.gt(0);
@@ -353,7 +423,7 @@ describe('lending library web services', () => {
 
   });    
 
-  describe.skip('Checkout Book Web Service with populated library', async () => {
+  describe('Checkout Book Web Service with populated library', async () => {
     
     beforeEach(async () => {
       await loadAllBooks(ws);
@@ -361,166 +431,165 @@ describe('lending library web services', () => {
 
     it('must allow checkout of multiple books by same patron', async () => {
       for (const book of BOOKS) {
-	const [ patronId, isbn ] = [ PATRONS[0], book.isbn ];
-	const res = await ws.put(`${BASE}/lendings`)
-	  .set('Content-Type', 'application/json')
-	  .send( { patronId, isbn });
-	expect(res.status).to.equal(STATUS.OK);
-	expect(res.body?.isOk).to.equal(true);
+        const [ patronId, isbn ] = [ PATRONS[0], book.isbn ];
+        const res = await ws.put(`${BASE}/lendings`)
+          .set('Content-Type', 'application/json')
+          .send( { patronId, isbn });
+        expect(res.status).to.equal(STATUS.OK);
+        expect(res.body?.isOk).to.equal(true);
       }
     });
 
     it('must error on repeated checkout of same book by same patron', async () => {
       const [ patronId, isbn ] = [ PATRONS[0], BOOK_nCopies2.isbn ];
       const res1 = await ws.put(`${BASE}/lendings`)
-	.set('Content-Type', 'application/json')
-	.send( { patronId, isbn });
-      expect(res1.status).to.equal(STATUS.OK);
-      expect(res1.body?.isOk).to.equal(true);
-      const res2 = await ws.put(`${BASE}/lendings`)
-	.set('Content-Type', 'application/json')
-	.send( { patronId, isbn });
-      expect(res2.status).to.equal(STATUS.BAD_REQUEST);
-      expect(res2.body?.isOk).to.equal(false);
-      expect(res2.body?.errors).to.have.length.gt(0);
+        .set('Content-Type', 'application/json')
+        .send( { patronId, isbn });
+            expect(res1.status).to.equal(STATUS.OK);
+            expect(res1.body?.isOk).to.equal(true);
+            const res2 = await ws.put(`${BASE}/lendings`)
+        .set('Content-Type', 'application/json')
+        .send( { patronId, isbn });
+            expect(res2.status).to.equal(STATUS.BAD_REQUEST);
+            expect(res2.body?.isOk).to.equal(false);
+            expect(res2.body?.errors).to.have.length.gt(0);
     });
 
     it('must error on exhausting all copies of a book', async () => {
       const isbn = BOOK_nCopies2.isbn;
       for (const [i, patronId] of PATRONS.entries()) {
-	const res1 = await ws.put(`${BASE}/lendings`)
-	  .set('Content-Type', 'application/json')
-	  .send( { patronId, isbn });
-	assert(res1.body?.isOk === i < 2, `copy ${i} checkout ${i < 2}`);
+        const res1 = await ws.put(`${BASE}/lendings`)
+          .set('Content-Type', 'application/json')
+          .send( { patronId, isbn });
+        assert(res1.body?.isOk === i < 2, `copy ${i} checkout ${i < 2}`);
       }
     });
 
   });
 
-  describe.skip('Checkout and Return Book Web Services', async () => {
+  describe('Checkout and Return Book Web Services', async () => {
 
     beforeEach(async () => {
       await loadAllBooks(ws);
     });
 
-
     it('must allow checkout/return of single book by same patron', async () => {
       for (const book of BOOKS) {
-	const [ patronId, isbn ] = [ PATRONS[0], book.isbn ];
-	const res1 = await ws.put(`${BASE}/lendings`)
-	  .set('Content-Type', 'application/json')
-	  .send( { patronId, isbn });
-	expect(res1.status).to.equal(STATUS.OK);
-	expect(res1.body?.isOk).to.equal(true);
-	const res2 = await ws.delete(`${BASE}/lendings`)
-	  .set('Content-Type', 'application/json')
-	  .send( { patronId, isbn });
-	expect(res1.status).to.equal(STATUS.OK);
-	expect(res1.body?.isOk).to.equal(true);
+        const [ patronId, isbn ] = [ PATRONS[0], book.isbn ];
+        const res1 = await ws.put(`${BASE}/lendings`)
+          .set('Content-Type', 'application/json')
+          .send( { patronId, isbn });
+        expect(res1.status).to.equal(STATUS.OK);
+        expect(res1.body?.isOk).to.equal(true);
+        const res2 = await ws.delete(`${BASE}/lendings`)
+          .set('Content-Type', 'application/json')
+          .send( { patronId, isbn });
+        expect(res1.status).to.equal(STATUS.OK);
+        expect(res1.body?.isOk).to.equal(true);
       }
     });
 
     it('must allow checkout/return of many books by same patron', async () => {
       for (const book of BOOKS) {
-	const [ patronId, isbn ] = [ PATRONS[0], book.isbn ];
-	const res1 = await ws.put(`${BASE}/lendings`)
-	  .set('Content-Type', 'application/json')
-	  .send( { patronId, isbn });
-	expect(res1.status).to.equal(STATUS.OK);
-	expect(res1.body?.isOk).to.equal(true);
-      }
-      for (const book of BOOKS) {
-	const [ patronId, isbn ] = [ PATRONS[0], book.isbn ];
-	const res1 = await ws.delete(`${BASE}/lendings`)
-	  .set('Content-Type', 'application/json')
-	  .send( { patronId, isbn });
-	expect(res1.status).to.equal(STATUS.OK);
-	expect(res1.body?.isOk).to.equal(true);
+        const [ patronId, isbn ] = [ PATRONS[0], book.isbn ];
+        const res1 = await ws.put(`${BASE}/lendings`)
+          .set('Content-Type', 'application/json')
+          .send( { patronId, isbn });
+        expect(res1.status).to.equal(STATUS.OK);
+        expect(res1.body?.isOk).to.equal(true);
+            }
+            for (const book of BOOKS) {
+        const [ patronId, isbn ] = [ PATRONS[0], book.isbn ];
+        const res1 = await ws.delete(`${BASE}/lendings`)
+          .set('Content-Type', 'application/json')
+          .send( { patronId, isbn });
+        expect(res1.status).to.equal(STATUS.OK);
+        expect(res1.body?.isOk).to.equal(true);
       }
     });
 
     it('must allow any order checkout/return of books by patron', async () => {
       for (const book of BOOKS) {
-	const [ patronId, isbn ] = [ PATRONS[0], book.isbn ];
-	const res1 = await ws.put(`${BASE}/lendings`)
-	  .set('Content-Type', 'application/json')
-	  .send( { patronId, isbn });
-	expect(res1.status).to.equal(STATUS.OK);
-	expect(res1.body?.isOk).to.equal(true);
-      }
-      for (const book of BOOKS.toReversed()) {
-	const [ patronId, isbn ] = [ PATRONS[0], book.isbn ];
-	const res1 = await ws.delete(`${BASE}/lendings`)
-	  .set('Content-Type', 'application/json')
-	  .send( { patronId, isbn });
-	expect(res1.status).to.equal(STATUS.OK);
-	expect(res1.body?.isOk).to.equal(true);
+        const [ patronId, isbn ] = [ PATRONS[0], book.isbn ];
+        const res1 = await ws.put(`${BASE}/lendings`)
+          .set('Content-Type', 'application/json')
+          .send( { patronId, isbn });
+        expect(res1.status).to.equal(STATUS.OK);
+        expect(res1.body?.isOk).to.equal(true);
+            }
+            for (const book of BOOKS.toReversed()) {
+        const [ patronId, isbn ] = [ PATRONS[0], book.isbn ];
+        const res1 = await ws.delete(`${BASE}/lendings`)
+          .set('Content-Type', 'application/json')
+          .send( { patronId, isbn });
+        expect(res1.status).to.equal(STATUS.OK);
+        expect(res1.body?.isOk).to.equal(true);
       }
     });
     
     it('must allow checkout/return of books by multiple patrons', async () => {
       for (const [i, book] of BOOKS.entries()) {
-	const [ patronId, isbn ] = [ PATRONS[i%PATRONS.length], book.isbn ];
-	const res1 = await ws.put(`${BASE}/lendings`)
-	  .set('Content-Type', 'application/json')
-	  .send( { patronId, isbn });
-	expect(res1.status).to.equal(STATUS.OK);
-	expect(res1.body?.isOk).to.equal(true);
+        const [ patronId, isbn ] = [ PATRONS[i%PATRONS.length], book.isbn ];
+        const res1 = await ws.put(`${BASE}/lendings`)
+          .set('Content-Type', 'application/json')
+          .send( { patronId, isbn });
+        expect(res1.status).to.equal(STATUS.OK);
+        expect(res1.body?.isOk).to.equal(true);
       }
       for (const [i, book]  of BOOKS.entries()) {
-	const [ patronId, isbn ] = [ PATRONS[i%PATRONS.length], book.isbn ];
-	const res1 = await ws.delete(`${BASE}/lendings`)
-	  .set('Content-Type', 'application/json')
-	  .send( { patronId, isbn });
-	expect(res1.status).to.equal(STATUS.OK);
-	expect(res1.body?.isOk).to.equal(true);
+        const [ patronId, isbn ] = [ PATRONS[i%PATRONS.length], book.isbn ];
+        const res1 = await ws.delete(`${BASE}/lendings`)
+          .set('Content-Type', 'application/json')
+          .send( { patronId, isbn });
+        expect(res1.status).to.equal(STATUS.OK);
+        expect(res1.body?.isOk).to.equal(true);
       }
     });
     
     it('must not allow return of books by different patrons', async () => {
       for (const [i, book] of BOOKS.entries()) {
-	const [ patronId, isbn ] = [ PATRONS[i%PATRONS.length], book.isbn ];
-	const res1 = await ws.put(`${BASE}/lendings`)
-	  .set('Content-Type', 'application/json')
-	  .send( { patronId, isbn });
-	expect(res1.status).to.equal(STATUS.OK);
-	expect(res1.body?.isOk).to.equal(true);
+        const [ patronId, isbn ] = [ PATRONS[i%PATRONS.length], book.isbn ];
+        const res1 = await ws.put(`${BASE}/lendings`)
+          .set('Content-Type', 'application/json')
+          .send( { patronId, isbn });
+        expect(res1.status).to.equal(STATUS.OK);
+        expect(res1.body?.isOk).to.equal(true);
       }
       for (const [i, book]  of BOOKS.entries()) {
-	const j = (i + 1)%(PATRONS.length);
-	const [ patronId, isbn ] = [ PATRONS[j], book.isbn ];
-	const res1 = await ws.delete(`${BASE}/lendings`)
-	  .set('Content-Type', 'application/json')
-	  .send( { patronId, isbn });
-	expect(res1.status).to.equal(STATUS.BAD_REQUEST);
-	expect(res1.body?.isOk).to.equal(false);
-	expect(res1.body?.errors.length).to.be.gt(0);
+        const j = (i + 1)%(PATRONS.length);
+        const [ patronId, isbn ] = [ PATRONS[j], book.isbn ];
+        const res1 = await ws.delete(`${BASE}/lendings`)
+          .set('Content-Type', 'application/json')
+          .send( { patronId, isbn });
+        expect(res1.status).to.equal(STATUS.BAD_REQUEST);
+        expect(res1.body?.isOk).to.equal(false);
+        expect(res1.body?.errors.length).to.be.gt(0);
       }
     });
 
 
     it('must not allow repeated return of books by a patron', async () => {
       for (const book of BOOKS) {
-	const [ patronId, isbn ] = [ PATRONS[0], book.isbn ];
-	const res1 = await ws.put(`${BASE}/lendings`)
-	  .set('Content-Type', 'application/json')
-	  .send( { patronId, isbn });
-	expect(res1.status).to.equal(STATUS.OK);
-	expect(res1.body?.isOk).to.equal(true);
+        const [ patronId, isbn ] = [ PATRONS[0], book.isbn ];
+        const res1 = await ws.put(`${BASE}/lendings`)
+          .set('Content-Type', 'application/json')
+          .send( { patronId, isbn });
+        expect(res1.status).to.equal(STATUS.OK);
+        expect(res1.body?.isOk).to.equal(true);
       }
       for (const book  of BOOKS.toReversed()) {
-	const [ patronId, isbn ] = [ PATRONS[0], book.isbn ];
-	const res1 = await ws.delete(`${BASE}/lendings`)
-	  .set('Content-Type', 'application/json')
-	  .send( { patronId, isbn });
-	expect(res1.status).to.equal(STATUS.OK);
-	expect(res1.body?.isOk).to.equal(true);
-	const res2 = await ws.delete(`${BASE}/lendings`)
-	  .set('Content-Type', 'application/json')
-	  .send( { patronId, isbn });
-	expect(res2.status).to.equal(STATUS.BAD_REQUEST);
-	expect(res2.body?.isOk).to.equal(false);
-	expect(res2.body?.errors.length).to.be.gt(0);
+        const [ patronId, isbn ] = [ PATRONS[0], book.isbn ];
+        const res1 = await ws.delete(`${BASE}/lendings`)
+          .set('Content-Type', 'application/json')
+          .send( { patronId, isbn });
+        expect(res1.status).to.equal(STATUS.OK);
+        expect(res1.body?.isOk).to.equal(true);
+        const res2 = await ws.delete(`${BASE}/lendings`)
+          .set('Content-Type', 'application/json')
+          .send( { patronId, isbn });
+        expect(res2.status).to.equal(STATUS.BAD_REQUEST);
+        expect(res2.body?.isOk).to.equal(false);
+        expect(res2.body?.errors.length).to.be.gt(0);
       }
     });    
     
