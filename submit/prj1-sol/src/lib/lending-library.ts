@@ -195,16 +195,16 @@ export class LendingLibrary {
 
     // Validate request
     if (!req || !isString(req.patronId) || !isString(req.isbn)) {
-      if (!isString(req.patronId)) {
+      if (!isMissing(req.patronId)) {
         errors.push(new Errors.Err('property patronId is required', { code: 'MISSING', widget: 'patronId' }));
       }
-
       if (!isString(req.isbn)) {
         errors.push(new Errors.Err('property isbn is required', { code: 'MISSING', widget: 'isbn' }));
       }
-
-     // errors.push(new Errors.Err('patronId or isbn field is not a string', { code: 'BAD_TYPE', widget: 'patronId' }));
-
+      return new Errors.ErrResult(errors);
+    }
+    if (!req || !isString(req.patronId) || !isString(req.isbn)){
+     errors.push(new Errors.Err('patronId or isbn field is not a string', { code: 'BAD_TYPE', widget: 'patronId' }));
       return new Errors.ErrResult(errors);
     }
 
@@ -264,11 +264,16 @@ export class LendingLibrary {
         errors.push(new Errors.Err('property isbn is required', { code: 'MISSING', widget: 'isbn' }));
       }
 
-      errors.push(new Errors.Err('patronId or isbn field is not a string', { code: 'BAD_TYPE', widget: 'patronId' }));
+      // errors.push(new Errors.Err('patronId or isbn field is not a string', { code: 'BAD_TYPE', widget: 'patronId' }));
 
       return new Errors.ErrResult(errors);
     }
 
+    if (!req || typeof req.patronId !== 'string' || typeof req.isbn !== 'string') {
+      errors.push(new Errors.Err('patronId or isbn field is not a string', { code: 'BAD_TYPE', widget: 'patronId' }));
+      return new Errors.ErrResult(errors);
+
+    }
     const { patronId, isbn } = req;
 
     // Check if the book with the given ISBN exists in the library
@@ -310,6 +315,9 @@ export class LendingLibrary {
 //TODO: add general utility functions or classes.
 function isString(value: any): value is string {
   return typeof value === 'string';
+}
+function isMissing(value: any): value is string {
+  return typeof value === 'string' && value.length === 0;
 }
 
 function validateAddBookRequest(req: Record<string, any>): Errors.Result<void> {

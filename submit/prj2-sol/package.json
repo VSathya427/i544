@@ -10,6 +10,7 @@
     "watch": "tsc --watch",
     "pretest": "npm run build",
     "test": "mocha --reporter-options maxDiffSize=128000 dist/test",
+    "grade-test": "mocha --reporter-options maxDiffSize=128000 dist/grading-tests",
     "predebug-test": "npm run build",
     "debug-test": "mocha --inspect-brk dist/test"
   },

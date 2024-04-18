@@ -20,7 +20,6 @@ interface Patron {
   isbn: string;
 }
 
-
 export async function makeLibraryDao(dbUrl: string) {
   return await LibraryDao.make(dbUrl);
 }
