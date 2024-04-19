@@ -42,22 +42,85 @@ export class LibraryWs {
 
   /** check out book specified by lend */
   //make a PUT request to /lendings
-  async checkoutBook(lend: Lib.Lend) : Promise<Errors.Result<void>> {
-    return Errors.errResult('TODO');
+  async checkoutBook(lend: Lib.Lend): Promise<Errors.Result<void>> {
+    const checkoutUrl = new URL(`${this.url}/api/lendings`);
+
+    const requestOptions: RequestInit = {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(lend)
+    };
+
+    try {
+      const response = await fetch(checkoutUrl.toString(), requestOptions);
+
+      if (!response.ok) {
+        const errorEnvelope: ErrorEnvelope = await response.json();
+        return new Errors.ErrResult(errorEnvelope.errors as Errors.Err[]);
+      }
+      return Errors.VOID_RESULT;
+    } catch (error) {
+      console.error(error);
+      return Errors.errResult(`Error checking out book: ${error}`);
+    }
   }
+
 
   /** return book specified by lend */
   //make a DELETE request to /lendings
-  async returnBook(lend: Lib.Lend) : Promise<Errors.Result<void>> {
-    return Errors.errResult('TODO');
+  // async returnBook(lend: Lib.Lend) : Promise<Errors.Result<void>> {
+  //   return Errors.errResult('TODO');
+  // }
+  async returnBook(lend: Lib.Lend): Promise<Errors.Result<void>> {
+    try {
+      // Make a DELETE request to the appropriate endpoint
+      const response = await fetch(`${this.url}/api/lendings`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(lend)
+      });
+
+      // Check if the response is successful
+      if (response.ok) {
+        return Errors.VOID_RESULT; // Return a successful result
+      } else {
+        const errorEnvelope: ErrorEnvelope = await response.json();
+        return new Errors.ErrResult(errorEnvelope.errors as Errors.Err[]);
+      }
+    } catch (error) {
+      // If an exception occurs, convert it into an error result
+      return Errors.errResult(error.toString());
+    }
   }
+
 
   /** return Lend[] of all lendings for isbn. */
   //make a GET request to /lendings with query-params set
   //to { findBy: 'isbn', isbn }.
-  async getLends(isbn: string) : Promise<Errors.Result<Lib.Lend[]>> {
-    return Errors.errResult('TODO');
+  async getLends(isbn: string): Promise<Errors.Result<Lib.Lend[]>> {
+    const lendsUrl = new URL(`${this.url}/api/lendings`);
+    lendsUrl.searchParams.set('findBy', 'isbn');
+    lendsUrl.searchParams.set('isbn', isbn);
+
+    try {
+			const result = await fetchJson<PagedEnvelope<Lib.Lend[]> | ErrorEnvelope>(
+				new URL(lendsUrl)
+			);
+			if (result.isOk) {
+				if (result.val.isOk) {
+					const lendArr = result.val.result as Lib.Lend[];
+					return Errors.okResult(lendArr);
+				}
+			}
+		} catch (error) {
+			return Errors.errResult(`Failed to fetch lendings: ${error}`);
+		}
   }
+
 
 
 }
