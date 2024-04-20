@@ -26,7 +26,6 @@ export class LibraryWs {
   async getBookByUrl(bookUrl: URL|string)
     : Promise<Errors.Result<SuccessEnvelope<Lib.XBook>>>
   {
-    // return Errors.errResult('TODO');
     return await getEnvelope<Lib.XBook, SuccessEnvelope<Lib.XBook>>(bookUrl);
   }
 
@@ -102,22 +101,21 @@ export class LibraryWs {
   //make a GET request to /lendings with query-params set
   //to { findBy: 'isbn', isbn }.
   async getLends(isbn: string): Promise<Errors.Result<Lib.Lend[]>> {
-    const lendsUrl = new URL(`${this.url}/api/lendings`);
-    lendsUrl.searchParams.set('findBy', 'isbn');
-    lendsUrl.searchParams.set('isbn', isbn);
-
+    const lendUrl = new URL(`${this.url}/api/lendings`);
+    lendUrl.searchParams.set('findBy', 'isbn');
+    lendUrl.searchParams.set('isbn', isbn);
     try {
 			const result = await fetchJson<PagedEnvelope<Lib.Lend[]> | ErrorEnvelope>(
-				new URL(lendsUrl)
+				new URL(lendUrl)
 			);
 			if (result.isOk) {
 				if (result.val.isOk) {
-					const lendArr = result.val.result as Lib.Lend[];
-					return Errors.okResult(lendArr);
+					const lend= result.val.result as Lib.Lend[];
+					return Errors.okResult(lend);
 				}
 			}
 		} catch (error) {
-			return Errors.errResult(`Failed to fetch lendings: ${error}`);
+      return Errors.errResult(error.toString());
 		}
   }
 

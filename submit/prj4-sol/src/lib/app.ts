@@ -23,13 +23,7 @@ class App {
   private readonly result: HTMLElement;
   private readonly errors: HTMLElement;
 
-  // constructor(wsUrl: string) {
-  //   this.wsUrl = wsUrl;
-  //   this.ws = makeLibraryWs(wsUrl);
-  //   this.result = document.querySelector('#result');
-  //   this.errors = document.querySelector('#errors');
-  //   //TODO: add search handler
-  // }
+
   constructor(wsUrl: string) {
     this.wsUrl = wsUrl;
     this.ws = makeLibraryWs(wsUrl);
@@ -38,9 +32,13 @@ class App {
     this.setupSearchHandler();
   }
 
+
+  //TODO: add private methods as needed
   private setupSearchHandler() {
     const searchInput = document.querySelector('#search');
     searchInput.addEventListener('blur', () => {
+      this.result.innerHTML = "";
+      this.clearErrors();
       const searchInput = document.querySelector('#search') as HTMLInputElement;
       const searchTerm = searchInput.value;
       console.log(searchTerm);
@@ -53,6 +51,7 @@ class App {
   private async displaySearchResults(url: string | URL) {
     const result = await this.ws.findBooksByUrl(url);
     if (result.isOk === true) {
+      this.clearErrors();
       const books = result.val.result;
       this.displayBooks(books);
       this.displayScrollControls(result.val.links);
@@ -72,6 +71,7 @@ class App {
       detailsLink.addEventListener('click', (event) => {
         this.displayBookDetails(book);
         event.preventDefault();
+        this.clearErrors();
       });
       li.append(span, detailsLink);
       ul.append(li);
@@ -82,42 +82,33 @@ class App {
 
   private displayBookDetails(book: Lib.XBook) {
 
-    this.clearErrors();
-    
     const detailsContainer = makeElement('div', { id: 'result' });
     const dl = makeElement('dl', { class: 'book-details' });
 
-    // Add ISBN
     const isbnDt = makeElement('dt', {}, 'ISBN');
     const isbnDd = makeElement('dd', {}, book.isbn);
     dl.append(isbnDt, isbnDd);
 
-    // Add Title
     const titleDt = makeElement('dt', {}, 'Title');
     const titleDd = makeElement('dd', {}, book.title);
     dl.append(titleDt, titleDd);
 
-    // Add Authors
     const authorsDt = makeElement('dt', {}, 'Authors');
     const authorsDd = makeElement('dd', {}, book.authors.join('; '));
     dl.append(authorsDt, authorsDd);
 
-    // Add Number of Pages
     const pagesDt = makeElement('dt', {}, 'Number of Pages');
     const pagesDd = makeElement('dd', {}, book.pages.toString());
     dl.append(pagesDt, pagesDd);
 
-    // Add Publisher
     const publisherDt = makeElement('dt', {}, 'Publisher');
     const publisherDd = makeElement('dd', {}, book.publisher);
     dl.append(publisherDt, publisherDd);
 
-    // Add Number of Copies
     const copiesDt = makeElement('dt', {}, 'Number of Copies');
     const copiesDd = makeElement('dd', {}, book.nCopies.toString());
     dl.append(copiesDt, copiesDd);
 
-    // Add Borrowers
     const borrowersDt = makeElement('dt', {}, 'Borrowers');
     const borrowersDd = makeElement('dd', { id: 'borrowers' }, 'None');
     dl.append(borrowersDt, borrowersDd);
@@ -126,10 +117,8 @@ class App {
     this.result.innerHTML = '';
     this.result.append(detailsContainer);
 
-    // Display checkout form below book details
     this.displayCheckoutForm(book.isbn);
 
-    // Update borrowers list
     this.updateBorrowersList(book.isbn);
   }
 
@@ -137,13 +126,11 @@ class App {
   private displayCheckoutForm(isbn: string) {
     const formContainer = makeElement('form', { class: 'grid-form' });
 
-    // Add inputs for Patron ID and error message span
     const label = makeElement('label', { for: 'patronId' }, 'Patron ID');
     const input = makeElement('input', { id: 'patronId' }) as HTMLInputElement;
     const errorSpan = makeElement('span', { class: 'error', id: 'patronId-error' });
     formContainer.append(label, input, errorSpan);
 
-    // Add submit button
     const submitButton = makeElement('button', { type: 'submit' }, 'Checkout Book');
     formContainer.append(submitButton);
 
@@ -156,6 +143,7 @@ class App {
       };
       const result = await this.ws.checkoutBook(lends);
       if (result.isOk) {
+        this.clearErrors();
         this.updateBorrowersList(isbn);
       } else if (result.isOk == false) {
         this.clearErrors();
@@ -183,6 +171,7 @@ class App {
           const span = makeElement('span', { class: 'content' }, lend.patronId);
           const button = makeElement('button', { class: 'return-book' }, 'Return Book');
           button.addEventListener('click', async () => {
+            this.clearErrors();
             const returnResult = await this.ws.returnBook(lend);
             if (returnResult.isOk) {
               li.remove();
@@ -196,53 +185,56 @@ class App {
         borrowersContainer.append(ul);
       }
     } else if (result.isOk == false) {
+      this.clearErrors();
       displayErrors(result.errors);
     }
   }
   
   private displayScrollControls(links: NavLinks) {
-  const scrollTop = makeElement('div', { class: 'scroll' });
-  const scrollBottom = makeElement('div', { class: 'scroll' });
+    const scrollTop = makeElement('div', { class: 'scroll' });
+    const scrollBottom = makeElement('div', { class: 'scroll' });
 
-  if (links.prev) {
-    const prevTopLink = makeElement('a', { rel: 'prev', href: '#' }, '<<');
-    prevTopLink.addEventListener('click', (event) => {
-      event.preventDefault();
-      this.displaySearchResults(links.prev.href);
-    });
-    scrollTop.append(prevTopLink);
+    if (links.prev) {
+      const prevTopLink = makeElement('a', { rel: 'prev', href: '#' }, '<<');
+      prevTopLink.addEventListener('click', (event) => {
+        this.clearErrors();
+        event.preventDefault();
+        this.displaySearchResults(links.prev.href);
+      });
+      scrollTop.append(prevTopLink);
 
-    const prevBottomLink = makeElement('a', { rel: 'prev', href: '#' }, '<<');
-    prevBottomLink.addEventListener('click', (event) => {
-      event.preventDefault();
-      this.displaySearchResults(links.prev.href);
-    });
-    scrollBottom.append(prevBottomLink);
+      const prevBottomLink = makeElement('a', { rel: 'prev', href: '#' }, '<<');
+      prevBottomLink.addEventListener('click', (event) => {
+        this.clearErrors();
+        event.preventDefault();
+        this.displaySearchResults(links.prev.href);
+      });
+      scrollBottom.append(prevBottomLink);
+    }
+
+    if (links.next) {
+      const nextTopLink = makeElement('a', { rel: 'next', href: '#' }, '>>');
+      nextTopLink.addEventListener('click', (event) => {
+        this.clearErrors();
+        event.preventDefault();
+        this.displaySearchResults(links.next.href);
+      });
+      scrollTop.append(nextTopLink);
+
+      const nextBottomLink = makeElement('a', { rel: 'next', href: '#' }, '>>');
+      nextBottomLink.addEventListener('click', (event) => {
+        this.clearErrors();
+        event.preventDefault();
+        this.displaySearchResults(links.next.href);
+      });
+      scrollBottom.append(nextBottomLink);
+    }
+
+    // Append the scroll controls before and after the search results
+    this.result.prepend(scrollTop);
+    this.result.append(scrollBottom);
   }
 
-  if (links.next) {
-    const nextTopLink = makeElement('a', { rel: 'next', href: '#' }, '>>');
-    nextTopLink.addEventListener('click', (event) => {
-      event.preventDefault();
-      this.displaySearchResults(links.next.href);
-    });
-    scrollTop.append(nextTopLink);
-
-    const nextBottomLink = makeElement('a', { rel: 'next', href: '#' }, '>>');
-    nextBottomLink.addEventListener('click', (event) => {
-      event.preventDefault();
-      this.displaySearchResults(links.next.href);
-    });
-    scrollBottom.append(nextBottomLink);
-  }
-
-  // Append the scroll controls before and after the search results
-  this.result.prepend(scrollTop);
-  this.result.append(scrollBottom);
-}
-
-  
-  //TODO: add private methods as needed
 
   /** unwrap a result, displaying errors if !result.isOk, 
    *  returning T otherwise.   Use as if (unwrap(result)) { ... }
